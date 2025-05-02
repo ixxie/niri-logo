@@ -1,18 +1,32 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+
+
+	// https://stackoverflow.com/a/53973230
+	function setOrUpdateHashParameter(hashParameterName: string, hashParameterValue: string) {
+		let theURL = new URL(window.location.origin);
+		theURL.search = window.location.hash.substring(1);
+		theURL.searchParams.set(hashParameterName, hashParameterValue);
+		window.location.hash = theURL.searchParams.toString();
+	}
+
 	let circle = $state({
 		count: 5,
 		alpha: 0.5,
 		lightness: 50,
 		chroma: 90,
 		radius: 250,
-		padding: 290,
-		reverse: false
+		padding: 210,
+		reverse: false,
+		blur: 0
 	});
+	// Object.preventExtensions(circle);
 
 	let hue = $state({
 		shift: 190,
 		range: 180
 	});
+	// Object.preventExtensions(hue);
 
 	let background = $state({
 		alpha: 1,
@@ -21,6 +35,7 @@
 		hue: 320,
 		visible: true
 	});
+	// Object.preventExtensions(background);
 
 	let backlight = $state({
 		alpha: 1,
@@ -29,16 +44,68 @@
 		hue: 0,
 		visible: true
 	});
+	// Object.preventExtensions(backlight);
+
+	let border = $state({
+		show: false,
+		thickness: 0
+	});
 
 	let circles = $derived(
 		[...Array(circle.count).keys()].map((index) => ({
 			index,
 			hue: hue.shift + (index * hue.range) / (circle.count - 1),
-			offset: circle.padding + (index * (1000 - 2 * circle.padding)) / (circle.count - 1)
+			offset:
+				500 - circle.padding + (index * (1000 - 2 * (500 - circle.padding))) / (circle.count - 1)
 		}))
 	);
+
+	function shareUrlHash() {
+		setOrUpdateHashParameter('circle', JSON.stringify(circle));
+		setOrUpdateHashParameter('hue', JSON.stringify(hue));
+		setOrUpdateHashParameter('background', JSON.stringify(background));
+		setOrUpdateHashParameter('backlight', JSON.stringify(backlight));
+		window.navigator.clipboard.writeText(window.location.href);
+		console.log(window.location.hash);
+	}
+	function jsonparse(str: string) {
+		return JSON.parse(str.replaceAll(/<|>|;/g, ''));
+	}
+
+	onMount(() => {
+		let hash = window.location.hash.substr(1);
+
+		let startHash = hash.split('&').reduce(function (res: Record<string, string>, item) {
+			var parts = item.split('=');
+			res[parts[0]] = decodeURIComponent(parts[1]);
+			return res;
+		}, {});
+
+		console.log(startHash);
+
+		circle = jsonparse(startHash.circle);
+
+		hue = jsonparse(startHash.hue);
+		background = jsonparse(startHash.background);
+		backlight = jsonparse(startHash.backlight);
+
+		circle.alpha = newCircle.alpha;
+
+		console.log(hue);
+	});
+
+	$effect(() => {
+		document
+			.querySelector(':root')
+			.style.setProperty('--background-hue', background.hue.toString());
+	});
 </script>
 
+<h1
+	style="margin-left: auto; margin-right: auto; text-align: center; font-size: x-large; color: lch(80 100 var(--background-hue))"
+>
+	niri color-a-tron
+</h1>
 <main>
 	<div>
 		<svg viewBox="0 0 1000 1000" version="1.1" id="svg1" xmlns="http://www.w3.org/2000/svg">
@@ -53,7 +120,7 @@
 			{/if}
 			{#each circles as { hue, offset }}
 				<circle
-					style="fill: lch({circle.lightness}% {circle.chroma} {hue} / {circle.alpha})"
+					style="fill: lch({circle.lightness}% {circle.chroma} {hue} / {circle.alpha}); filter: blur({circle.blur}px);"
 					cx={offset}
 					cy="500"
 					r={circle.radius}
@@ -80,7 +147,7 @@
 			{/if}
 			{#each circles as { hue, offset }}
 				<circle
-					style="fill: lch({circle.lightness}% {circle.chroma} {hue} / {circle.alpha})"
+					style="fill: lch({circle.lightness}% {circle.chroma} {hue} / {circle.alpha}); filter: blur({circle.blur}px);"
 					cx={offset}
 					cy="500"
 					r={circle.radius}
@@ -98,93 +165,141 @@
 		</svg>
 	</div>
 	<menu>
-		<h1>hue</h1>
+		<h1>colors</h1>
 		<label>
-			<input type="range" bind:value={hue.shift} min={0} max={360} />
-			shift
+			<input autocomplete="off" type="range" bind:value={hue.shift} min={0} max={360} />
+			hue
 			{hue.shift}
 		</label>
 		<label>
-			<input type="range" bind:value={hue.range} min={0} max={360} />
-			range
+			<input autocomplete="off" type="range" bind:value={hue.range} min={0} max={360} />
+			hue range
 			{hue.range}
 		</label>
-		<h1>circles</h1>
+		<h1>pattern</h1>
 		<label>
-			<input type="range" bind:value={circle.alpha} min={0} max={1} step="0.01" />
-			alpha
+			<input autocomplete="off" type="range" bind:value={circle.count} min={3} max={8} />
+			steps
+			{circle.count}
+		</label>
+		<label>
+			<input
+				autocomplete="off"
+				type="range"
+				bind:value={circle.alpha}
+				min={0}
+				max={1}
+				step="0.01"
+			/>
+			opacity
 			{circle.alpha}
 		</label>
 		<label>
-			<input type="range" bind:value={circle.lightness} min={0} max={100} />
+			<input autocomplete="off" type="range" bind:value={circle.lightness} min={0} max={100} />
 			lightness
 			{circle.lightness}
 		</label>
 		<label>
-			<input type="range" bind:value={circle.chroma} min={0} max={250} />
-			chroma
+			<input autocomplete="off" type="range" bind:value={circle.chroma} min={0} max={250} />
+			saturation
 			{circle.chroma}
 		</label>
 		<label>
-			<input type="range" bind:value={circle.radius} min={0} max={500} />
-			radius
+			<input autocomplete="off" type="range" bind:value={circle.radius} min={0} max={500} />
+			size
 			{circle.radius}
 		</label>
 		<label>
-			<input type="range" bind:value={circle.padding} min={0} max={500} />
-			padding
+			<input autocomplete="off" type="range" bind:value={circle.padding} min={0} max={500} />
+			spread
 			{circle.padding}
+		</label>
+		<label>
+			<input autocomplete="off" type="range" bind:value={circle.blur} min={0} max={150} />
+			blur
+			{circle.blur}
 		</label>
 		<h1>background</h1>
 		<label>
-			<input type="checkbox" bind:checked={background.visible} />
+			<input autocomplete="off" type="checkbox" bind:checked={background.visible} />
 			show
 		</label>
 		<label>
-			<input type="range" bind:value={background.alpha} min={0} max={1} step="0.01" />
+			<input
+				autocomplete="off"
+				type="range"
+				bind:value={background.alpha}
+				min={0}
+				max={1}
+				step="0.01"
+			/>
 			opacity
 			{background.alpha}
 		</label>
 		<label>
-			<input type="range" bind:value={background.lightness} min={0} max={100} />
+			<input autocomplete="off" type="range" bind:value={background.lightness} min={0} max={100} />
 			lightness
 			{background.lightness}
 		</label>
 		<label>
-			<input type="range" bind:value={background.chroma} min={0} max={250} />
-			chroma
+			<input autocomplete="off" type="range" bind:value={background.chroma} min={0} max={250} />
+			saturation
 			{background.chroma}
 		</label>
 		<label>
-			<input type="range" bind:value={background.hue} min={0} max={360} />
+			<input autocomplete="off" type="range" bind:value={background.hue} min={0} max={360} />
 			hue
 			{background.hue}
 		</label>
-		<h1>backlight</h1>
+		<h1>pattern lighting</h1>
 		<label>
-			<input type="checkbox" bind:checked={backlight.visible} />
+			<input autocomplete="off" type="checkbox" bind:checked={backlight.visible} />
 			show
 		</label>
 		<label>
-			<input type="range" bind:value={backlight.alpha} min={0} max={1} step="0.01" />
+			<input
+				autocomplete="off"
+				type="range"
+				bind:value={backlight.alpha}
+				min={0}
+				max={1}
+				step="0.01"
+			/>
 			opacity
 			{backlight.alpha}
 		</label>
 		<label>
-			<input type="range" bind:value={backlight.lightness} min={0} max={100} />
+			<input autocomplete="off" type="range" bind:value={backlight.lightness} min={0} max={100} />
 			lightness
 			{backlight.lightness}
 		</label>
 		<label>
-			<input type="range" bind:value={backlight.chroma} min={0} max={250} />
-			chroma
+			<input autocomplete="off" type="range" bind:value={backlight.chroma} min={0} max={250} />
+			saturation
 			{backlight.chroma}
 		</label>
 		<label>
-			<input type="range" bind:value={backlight.hue} min={0} max={360} />
+			<input autocomplete="off" type="range" bind:value={backlight.hue} min={0} max={360} />
 			hue
 			{backlight.hue}
 		</label>
+		<!-- <h1>border</h1>
+		<label>
+			<input autocomplete="off" type="checkbox" bind:checked={border.show} />
+			show
+		</label>
+		<label>
+			<input autocomplete="off" type="range" bind:value={border.thickness} min={0} max={360} />
+			thickness
+			{backlight.thickness}
+		</label> -->
+
+		<h1>sharing</h1>
+		<button
+			onclick={() => {
+				shareUrlHash();
+			}}>copy url</button
+		>
 	</menu>
 </main>
 
@@ -226,6 +341,49 @@
 	@media (max-aspect-ratio: 1 / 1) {
 		main {
 			flex-flow: column;
+		}
+	}
+
+	:global(body) {
+		background: lch(10 10 var(--background-hue));
+		color: lch(100 40 var(--background-hue));
+		accent-color: lch(60 40 var(--background-hue));
+		transition:
+			color 1s,
+			background 1s;
+		font-family:
+			system-ui,
+			-apple-system,
+			BlinkMacSystemFont,
+			'Segoe UI',
+			Roboto,
+			Oxygen,
+			Ubuntu,
+			Inter,
+			Cantarell,
+			'Open Sans',
+			'Helvetica Neue',
+			sans-serif;
+	}
+
+	:global(html) {
+		--background-hue: 0;
+	}
+
+	button {
+		background: lch(25 10 var(--background-hue));
+		color: #fff;
+		border: none;
+		padding: 10px;
+		font-size: medium;
+		transition: all 0.05s;
+		border-radius: 5px;
+
+		&:hover {
+			background: lch(30 10 var(--background-hue));
+		}
+		&:active {
+			transform: scale(0.96);
 		}
 	}
 </style>
