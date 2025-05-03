@@ -283,17 +283,6 @@
 			hue
 			{backlight.hue}
 		</label>
-		<!-- <h1>border</h1>
-		<label>
-			<input autocomplete="off" type="checkbox" bind:checked={border.show} />
-			show
-		</label>
-		<label>
-			<input autocomplete="off" type="range" bind:value={border.thickness} min={0} max={360} />
-			thickness
-			{backlight.thickness}
-		</label> -->
-
 		<h1>sharing</h1>
 		<button
 			onclick={() => {
