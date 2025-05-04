@@ -9,8 +9,8 @@
 </script>
 
 <label>
-	<input type="number" bind:value {min} {max} {step} />
-	<input type="range" bind:value {min} {max} {step} />
+	<input type="number" autocomplete="off" bind:value {min} {max} {step} />
+	<input type="range" autocomplete="off" bind:value {min} {max} {step} />
 	{label}
 </label>
 

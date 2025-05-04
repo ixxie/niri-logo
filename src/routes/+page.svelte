@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Param from '$lib/Param.svelte';
 	import { debounce } from '$lib/utils';
+	import { onMount } from 'svelte';
 
 	let hue = $state({
 		count: 5,
@@ -33,6 +34,28 @@
 	});
 
 	let hash = $derived(btoa(JSON.stringify({ hue, chroma, opacity, lightness })));
+
+	onMount(() => {
+		let data = JSON.parse(atob(window.location.hash.substring(1)));
+
+		console.log(data);
+
+		hue = data.hue;
+		chroma = data.chroma;
+		opacity = data.opacity;
+		lightness = data.lightness;
+	});
+
+	$effect(() => {
+		window.location.hash = hash;
+		// fix weird issues with lightness not changing hash
+		lightness.light = lightness.light;
+		lightness.dark = lightness.dark;
+	});
+
+	function copyHash() {
+		window.navigator.clipboard.writeText(window.location.href);
+	}
 
 	$inspect(hash);
 
@@ -177,6 +200,12 @@
 			max={0.15}
 			step={0.001}
 		/>
+		<h1>sharing</h1>
+		<button
+			onclick={() => {
+				copyHash();
+			}}>copy design url</button
+		>
 	</div>
 	<div>
 		<h1>light mode</h1>
