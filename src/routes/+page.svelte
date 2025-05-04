@@ -38,14 +38,22 @@
 	onMount(() => {
 		let data = JSON.parse(atob(window.location.hash.substring(1)));
 
+		console.log(data);
+
 		hue = data.hue;
 		chroma = data.chroma;
 		opacity = data.opacity;
 		lightness = data.lightness;
 	});
 
-	function copyHash() {
+	$effect(() => {
 		window.location.hash = hash;
+		// fix weird issues with lightness not changing hash
+		lightness.light = lightness.light;
+		lightness.dark = lightness.dark;
+	});
+
+	function copyHash() {
 		window.navigator.clipboard.writeText(window.location.href);
 	}
 

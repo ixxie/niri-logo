@@ -10,7 +10,7 @@
 
 <label>
 	<input type="number" autocomplete="off" bind:value {min} {max} {step} />
-	<input type="range" autocomplete="off" {min} {max} {step} />
+	<input type="range" autocomplete="off" bind:value {min} {max} {step} />
 	{label}
 </label>
 
